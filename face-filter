@@ -1,0 +1,56 @@
+import cv2
+import numpy as np
+from google.colab.patches import cv2_imshow
+
+
+# frame = cv2. VideoCapture(0) :if you are using web cam use this
+frame = cv2.imread("person.jpg")
+img=cv2.imread("witch2.png")
+img=cv2.resize(img,(200,100))
+
+
+
+r,c,h=img.shape #taking shape of image
+
+classifier1 = cv2.CascadeClassifier("haarcascade_frontal_face.xml") #kind of training by already collected face data
+
+img_g=cv2.cvtColor(img,cv2.COLOR_BGR2GRAY) #converting to gray scale aS threshold functions for grey image
+ret,mask= cv2.threshold(img_g,10,255,cv2.THRESH_BINARY) # if thr value is less than 10=> 0, otherwise 255
+mask_i=cv2.bitwise_not(mask)
+
+
+
+faces = classifier1.detectMultiScale(frame)
+for face in faces:
+      x, y, w, h = face
+      frame = cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 0, 255), 4)
+
+  # Adjusting position for filter
+      w2=w
+      h2=h
+      hx1=x
+      hx2=hx1+w2
+      hy1=y
+      hy2=hy1+h2
+      
+      img = cv2.resize(img, (hx2-hx1,hy2-hy1), interpolation = cv2.INTER_AREA)
+      mask = cv2.resize(mask, (hx2-hx1,hy2-hy1), interpolation = cv2.INTER_AREA)
+      mask_i = cv2.resize(mask_i, (hx2-hx1,hy2-hy1), interpolation = cv2.INTER_AREA)
+      # if(hy1-h<0): if you are using video / web cam this condition will take care of your filter not going out of window 
+      #   continue    i.e  your face with filter perfectly fits on window
+                     
+      roi=frame[(hy1+10)-(h+10):hy1,hx1:hx2]
+      frame_bg=cv2.bitwise_and(roi,roi,mask=mask_i)   # bitwise operation in only that region where mask is present  (non zero)and in reference to that  
+      frame_fg=cv2.bitwise_and(img,img,mask=mask)
+      dst = cv2.add(frame_fg,frame_bg)
+      
+      frame[hy1-h:hy1,hx1:hx2]=dst
+      
+      
+cv2_imshow( frame)
+    
+
+                                                                                         
+# cap.release()
+cv2.waitKey(0)
+cv2.destroyAllWindows() 
